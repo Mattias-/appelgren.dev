@@ -1,22 +1,20 @@
 const text = {
-  content: "Hello World",
+  content: "Mattias",
   x: 50,
   y: 200,
+  font: "Permanent Marker",
+  fontSize: "150px",
 };
-const font = "Permanent Marker";
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+const ctx = document.getElementById("canvas").getContext("2d");
+// Screen makes cyan + magenta = white
+ctx.globalCompositeOperation = "screen";
 
 WebFont.load({
   google: {
-    families: [font],
+    families: [text.font],
   },
 });
-ctx.font = "150px " + font;
-
-// Screen makes cyan + magenta = white
-ctx.globalCompositeOperation = "screen";
 
 function getRandomInt(min, max) {
   min = Math.ceil(min);
@@ -39,7 +37,7 @@ class Flicker {
         self.on = false;
         self.flicker();
       }, getRandomInt(100, 200));
-    }, getRandomInt(500, 2000));
+    }, getRandomInt(500, 1000));
   }
 
   drawOn() {}
@@ -59,21 +57,23 @@ class Flicker {
 }
 
 class LineShiftFlicker extends Flicker {
-  constructor() {
+  constructor(ctx) {
     super();
+    this.ctx = ctx;
   }
 
   drawOn() {
     let y = getRandomInt(50, 200);
     let imageData2 = ctx.getImageData(20, y, 1600, 3);
     let dx = getRandomInt(-15, 15);
-    ctx.putImageData(imageData2, 20 + dx, y);
+    this.ctx.putImageData(imageData2, 20 + dx, y);
   }
 }
 
 class TextShiftFlicker extends Flicker {
-  constructor(text, color, dx, dxMult) {
+  constructor(ctx, text, color, dx, dxMult) {
     super();
+    this.ctx = ctx;
     this.text = text;
     this.color = color;
     this.dx = dx;
@@ -92,8 +92,9 @@ class TextShiftFlicker extends Flicker {
   }
 
   drawFinally() {
-    ctx.fillStyle = this.color;
-    ctx.fillText(
+    this.ctx.fillStyle = this.color;
+    this.ctx.font = `${this.text.fontSize} ${this.text.font}`;
+    this.ctx.fillText(
       this.text.content,
       this.text.x + this.dx + this.dx2,
       this.text.y
@@ -104,19 +105,24 @@ class TextShiftFlicker extends Flicker {
 (function () {
   function main() {
     window.requestAnimationFrame(main);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    cyan.draw();
-    magenta.draw();
-    line1.draw();
-    line2.draw();
-    line3.draw();
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    for (let fx of fxs) {
+      fx.draw();
+    }
   }
-  let cyan = new TextShiftFlicker(text, "rgba(0, 255, 255, 1)", -5, 1);
-  let magenta = new TextShiftFlicker(text, "rgba(255, 0, 255, 1)", 5, -1);
-  let line1 = new LineShiftFlicker();
-  let line2 = new LineShiftFlicker();
-  let line3 = new LineShiftFlicker();
+
+  let cyan = new TextShiftFlicker(ctx, text, "rgba(0, 255, 255, 1)", -5, 1);
+  let magenta = new TextShiftFlicker(ctx, text, "rgba(255, 0, 255, 1)", 5, -1);
+  let line1 = new LineShiftFlicker(ctx);
+  let line2 = new LineShiftFlicker(ctx);
+  let line3 = new LineShiftFlicker(ctx);
+  let fxs = [
+    cyan,
+    magenta,
+    line1,
+    line2,
+    line3,
+  ];
 
   main(); // Start the cycle
 })();
